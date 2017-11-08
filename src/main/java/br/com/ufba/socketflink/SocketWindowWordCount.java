@@ -5,6 +5,7 @@
  */
 package br.com.ufba.socketflink;
 
+import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -12,13 +13,16 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author brenno
  */
 public class SocketWindowWordCount {
-        
+    private static Logger LOG = LoggerFactory.getLogger(SocketWindowWordCount.class);
+    
     public static void main(String[] args) throws Exception {
         // the port to connect to
         final int port;
@@ -29,17 +33,16 @@ public class SocketWindowWordCount {
             System.err.println("No port specified. Please run 'SocketWindowWordCount --port <port>'");
             return;
         }
-
+        
+        
         // get the execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         
        
         // get input data by connecting to the socket
-        DataStream<String> text = env.socketTextStream("localhost", port, "\n");
+        DataStream<String> text = env.socketTextStream("localhost", port, "\n");      
         
-        
-        System.out.println("Tempo de resposta: " +System.currentTimeMillis());
-        
+        LOG.info("Saída 2: ");
         
         // parse the data, group it, window it, and aggregate the counts
         DataStream<WordWithCount> windowCounts = text.flatMap(new FlatMapFunction<String, WordWithCount>() {
@@ -58,12 +61,17 @@ public class SocketWindowWordCount {
                     return new WordWithCount(a.word, a.count + b.count);
                 }
             });
-
+        
+        
+        LOG.info("Saída 2: ");
+        
         // print the results with a single thread, rather than in parallel
         windowCounts.print().setParallelism(1);
         
                 
-        env.execute("Socket Window WordCount");
+        JobExecutionResult jobResult = env.execute("Socket Window WordCount");
+        
+        
     }
 
     // Data type for words with count
